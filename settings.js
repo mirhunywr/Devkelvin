@@ -5,7 +5,7 @@ const config = require('./config');
 
 
 const settings = {
-  SESSION_ID: config.SESSION_ID || "suho~LAlxETYD#vHXbn_xUGPXyn7qms5KqjqowuBg_vW9vPbEvRHSWsKU", // enter session id
+  SESSION_ID: config.SESSION_ID || "Jexploit~N3dAgLgb#g7wGAoRys0LOerJ_WBx7n9fXyLF4rAZmTHZpl8hDgUc", // enter session id
   ownername: config.ownername || "ᴋᴇʟᴠɪɴ ᴛᴇᴄʜ", // Owner name
   botname: config.botname || "ᴠɪɴɪᴄ xᴍᴅ", // custom bot name
   prefa: config.prefa || ['.', '!'], // Command prefixes
