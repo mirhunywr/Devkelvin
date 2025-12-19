@@ -1,45 +1,18 @@
-// ========== IMPORTANT: Ye file ko .mjs extension se save karein ya package.json mein "type": "module" set karein ==========
+console.clear();
+console.log('🚀 Starting Jexploit Bot with Baileys v7.0.0-rc.9...');
 
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadContentFromMessage, getContentType, proto, delay, Browsers } from '@whiskeysockets/baileys';
-import { Boom } from '@hapi/boom';
-import pino from 'pino';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { createInterface } from 'readline';
-import chalk from 'chalk';
-import _ from 'lodash';
-import NodeCache from 'node-cache';
-import util from 'util';
-import axios from 'axios';
-import moment from 'moment-timezone';
-import { Image, Webp } from 'node-webpmux';
-import ffmpeg from 'fluent-ffmpeg';
-import { tmpdir } from 'os';
-
-// ES Modules ke liye __dirname fix
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// ========== Aap ka original configuration waisa hi ==========
 const isProduction = process.env.NODE_ENV === 'production';
 const isLowMemory = process.env.MEMORY_LIMIT < 512 || isProduction;
-const usePairingCode = true;
 
-const settings = JSON.parse(fs.readFileSync('./settings.json', 'utf8'));
-const config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
-
-const timezones = global.timezones || "Africa/Kampala";
-const botname = "Jexploit-Bot";
-const wm = "Powered by Kelvin Tech 🇺🇬";
-
-// Optimize memory usage - original code
+// Optimize memory usage
 if (isLowMemory) {
   console.log('🚀 Running in optimized mode for cloud/low memory environment');
 }
 
-// Enhanced error handling - original code
+const settings = require('./settings');
+const config = require('./config');
+
+// Enhanced error handling for cloud stability
 process.on("uncaughtException", (error) => {
   console.error('Uncaught Exception:', error);
 });
@@ -48,9 +21,72 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-// ========== UTILITY FUNCTIONS - Updated for v7 ==========
+// ========== BAILEYS v7 IMPORT - UPDATED ==========
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason,
+  fetchLatestBaileysVersion,
+  downloadContentFromMessage,
+  getContentType,
+  proto,
+  delay,
+  Browsers,
+  makeCacheableSignalKeyStore,
+  getAggregateVotesInPollMessage
+} = require("@whiskeysockets/baileys");
+
+const { Boom } = require('@hapi/boom');
+const pino = require('pino');
+const readline = require("readline");
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const chalk = require('chalk');
+const _ = require('lodash');
+const NodeCache = require("node-cache");
+const lolcatjs = require('lolcatjs');
+const util = require('util');
+const axios = require('axios');
+const moment = require('moment-timezone');
+const FileType = require('file-type');
+const PhoneNumber = require('awesome-phonenumber');
+
+// Global variables
+const more = String.fromCharCode(8206);
+const readmore = more.repeat(4001);
+const timezones = global.timezones || "Africa/Kampala";
+
+// Import your existing functions
+const {
+  smsg,
+  formatSize,
+  isUrl,
+  generateMessageTag,
+  getBuffer,
+  getSizeMedia,
+  runtime,
+  fetchJson,
+} = require('./start/lib/myfunction');
+
+const { detectUrls } = require('./Jex');
+
+const {
+  imageToWebp,
+  videoToWebp,
+  writeExifImg,
+  writeExifVid
+} = require('./start/lib/exif');
+
+// Use system temp directory
+const TMP_DIR = isProduction 
+  ? path.join(os.tmpdir(), 'jexploit-bot-tmp')
+  : path.join(__dirname, 'tmp');
+
+const usePairingCode = true;
+
 const question = (text) => {
-  const rl = createInterface({
+  const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
@@ -62,93 +98,43 @@ const question = (text) => {
   });
 };
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// ========== SESSION HANDLING - UPDATED FOR v7 ==========
+const sessionDir = path.join(__dirname, 'sessions');
+const credsPath = path.join(sessionDir, 'creds.json');
 
-// V7 IMPORTANT: decodeJid function ko update karein LID support ke liye
-function decodeJid(jid) {
-  if (!jid) return jid;
-  
-  // Agar pehle se hi @ hai (LID ya normal JID)
-  if (jid.includes('@')) {
-    // LID format (@lid) handle karein
-    if (jid.endsWith('@lid')) {
-      return jid;
-    }
-    // Normal JID format
-    return jid;
-  }
-  
-  // Agar sirf number hai
-  if (/^\d+$/.test(jid)) {
-    return jid + '@s.whatsapp.net';
-  }
-  
-  return jid;
+if (!fs.existsSync(sessionDir)) {
+  fs.mkdirSync(sessionDir, { recursive: true });
 }
 
-// Buffer function - updated for ESM
-async function getBuffer(url, options = {}) {
+async function loadSession() {
   try {
-    const response = await axios({
-      url,
-      responseType: 'arraybuffer',
-      ...options
-    });
-    return Buffer.from(response.data, 'binary');
+    if (!settings.SESSION_ID) {
+      console.log('No SESSION_ID provided - QR login will be generated');
+      return null;
+    }
+
+    console.log('[ ⏳ ] Downloading creds data...');
+    console.log('[ 🆔️ ] Downloading MEGA.nz session...');
+    
+    const megaFileId = settings.SESSION_ID.startsWith('Jexploit~') 
+      ? settings.SESSION_ID.replace("Jexploit~", "") 
+      : settings.SESSION_ID;
+
+    // Note: MEGA download logic aap ka waisa hi rahega
+    // Yahan temporary ke liye simple implementation
+    console.log('[ ⚠️ ] MEGA session logic requires megajs implementation');
+    return null;
+    
   } catch (error) {
-    console.error('Buffer fetch error:', error.message);
+    console.error('❌ Error loading session:', error.message);
+    console.log('Will generate QR code instead');
     return null;
   }
 }
 
-// ========== MEDIA FUNCTIONS (WebP) - Updated for ESM ==========
-async function imageToWebp(buffer) {
-  try {
-    const img = new Image();
-    await img.load(buffer);
-    const webp = new Webp();
-    await webp.setImage(img);
-    return await webp.save();
-  } catch (error) {
-    console.error('Image to WebP error:', error);
-    return buffer;
-  }
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-async function writeExifImg(buffer, metadata) {
-  try {
-    const { packname = botname, author = wm } = metadata;
-    const img = new Image();
-    await img.load(buffer);
-    
-    const exif = {
-      "sticker-pack-id": "Jexploit-Bot",
-      "sticker-pack-name": packname,
-      "sticker-pack-publisher": author,
-      "android-app-store-link": "https://github.com/kelvinojie",
-      "ios-app-store-link": "https://github.com/kelvinojie"
-    };
-    
-    const json = JSON.stringify(exif);
-    const exifAttr = Buffer.from([0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00]);
-    const jsonBuffer = Buffer.from(json, 'utf8');
-    const exifBuffer = Buffer.concat([exifAttr, jsonBuffer]);
-    
-    const webp = new Webp();
-    await webp.setImage(img);
-    await webp.exif = exifBuffer;
-    
-    return await webp.save();
-  } catch (error) {
-    console.error('Write Exif error:', error);
-    return await imageToWebp(buffer);
-  }
-}
-
-// ========== TEMP DIRECTORY - Aap ka original logic ==========
-const TMP_DIR = isProduction 
-  ? path.join(tmpdir(), 'vinic-bot-tmp')
-  : path.join(__dirname, 'tmp');
 
 function cleanupTmpFiles() {
   try {
@@ -165,7 +151,7 @@ function cleanupTmpFiles() {
             deletedCount++;
           }
         } catch (e) {
-          // Ignore file errors
+          // Ignore errors
         }
       });
       if (deletedCount > 0) {
@@ -177,294 +163,6 @@ function cleanupTmpFiles() {
   }
 }
 
-// ========== SESSION LOADING - Updated for v7 ==========
-const sessionDir = path.join(__dirname, 'sessions');
-const credsPath = path.join(sessionDir, 'creds.json');
-
-if (!fs.existsSync(sessionDir)) {
-  fs.mkdirSync(sessionDir, { recursive: true });
-}
-
-// V7 CHANGE: MEGA session loading ka logic aap ka original rahega
-async function loadSession() {
-  try {
-    if (!settings.SESSION_ID) {
-      console.log('No SESSION_ID provided - QR login will be generated');
-      return null;
-    }
-
-    console.log('[ ⏳ ] Downloading creds data...');
-    console.log('[ 🆔️ ] Downloading MEGA.nz session...');
-    
-    // Aap ka original MEGA logic yahi rahega
-    const megaFileId = settings.SESSION_ID.startsWith('Jexploit~') 
-      ? settings.SESSION_ID.replace("Jexploit~", "") 
-      : settings.SESSION_ID;
-    
-    // Yahan aap ka MEGA download logic aayega
-    // ...
-    
-    return JSON.parse(fs.readFileSync(credsPath, 'utf8'));
-  } catch (error) {
-    console.error('❌ Error loading session:', error.message);
-    return null;
-  }
-}
-
-// ========== MAIN BOT START FUNCTION - UPDATED FOR V7 ==========
-async function clientstart() {
-  // Session load karein
-  const creds = await loadSession();
-  
-  // V7 IMPORTANT: useMultiFileAuthState ka syntax
-  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-  
-  // Fetch latest version
-  let waVersion;
-  try {
-    const { version } = await fetchLatestBaileysVersion();
-    waVersion = version;
-    console.log("[JEXPLOIT] Connecting to WhatsApp ⏳️...");
-  } catch (error) {
-    console.log(chalk.yellow(`[⚠️] Using stable fallback version`));
-    waVersion = [2, 3000, 1017546695];
-  }
-  
-  // ========== V7 SOCKET CONFIGURATION - OPTIMIZED FOR SPEED ==========
-  const conn = makeWASocket({
-    // Aap ke original settings
-    printQRInTerminal: !usePairingCode,
-    syncFullHistory: false,
-    markOnlineOnConnect: true,
-    connectTimeoutMs: 60000, // Reduced for faster connection
-    defaultQueryTimeoutMs: 30000,
-    keepAliveIntervalMs: 25000,
-    maxRetries: 5,
-    generateHighQualityLinkPreview: false,
-    linkPreviewImageThumbnailWidth: 64,
-    
-    version: waVersion,
-    
-    // V7 CHANGE: Browsers object use karein
-    browser: Browsers.ubuntu('Chrome'),
-    
-    // Performance ke liye minimal logging
-    logger: pino({ level: 'silent' }),
-    
-    // V7 IMPORTANT: Auth state simple rakhain
-    auth: state,
-    
-    // V7 PERFORMANCE OPTIONS
-    fireInitQueries: false,
-    emitOwnEvents: true,
-    defaultCongestionControl: 1,
-    
-    // V7 NEW: Transaction optimizations
-    transactionOpts: {
-      maxCommitRetries: 2,
-      delayBeforeRetry: 1000
-    },
-    
-    // V7 NEW: getMessage cache (optional for speed)
-    getMessage: async (key) => {
-      return null; // Aap ka store logic yahan aayega
-    }
-  });
-  
-  // V7 UPDATE: decodeJid function assign karein
-  conn.decodeJid = decodeJid;
-  
-  // V7 IMPORTANT: LID mapping event handle karein
-  conn.ev.on('lid-mapping.update', (mappings) => {
-    console.log('[LID UPDATE] New mappings:', mappings.length);
-    // Aap ke original store mein save karein
-    if (!global.lidMapping) global.lidMapping = new Map();
-    mappings.forEach(mapping => {
-      global.lidMapping.set(mapping.lid, mapping.pn);
-      global.lidMapping.set(mapping.pn, mapping.lid);
-    });
-  });
-  
-  // ========== AAP KE ORIGINAL EVENT HANDLERS ==========
-  // Yeh sab waisa hi rahega, bas internal functions update ho gaye hain
-  
-  // Store binding
-  const { makeInMemoryStore } = await import('./start/lib/store/index.js');
-  const store = makeInMemoryStore({
-    logger: pino().child({ level: 'silent', stream: 'store' })
-  });
-  store.bind(conn.ev);
-  
-  // messages.upsert handler - Aap ka original logic
-  conn.ev.on('messages.upsert', async (chatUpdate) => {
-    try {
-      // Aap ka purana logic yahan aayega
-      let mek = chatUpdate.messages[0];
-      if (!mek.message) return;
-      
-      // ... aap ka baki ka logic ...
-      
-    } catch (err) {
-      console.log(chalk.yellow.bold("[ ERROR ] messages.upsert :\n") + chalk.redBright(util.format(err)));
-    }
-  });
-  
-  // contacts.update handler
-  conn.ev.on('contacts.update', update => {
-    for (let contact of update) {
-      let id = conn.decodeJid(contact.id);
-      if (store && store.contacts) store.contacts[id] = { id, name: contact.notify };
-    }
-  });
-  
-  // group-participants.update handler - Aap ka original logic
-  conn.ev.on('group-participants.update', async (anu) => {
-    try {
-      // Aap ka welcome, goodbye, admin events ka logic yahan aayega
-      // ...
-    } catch (error) {
-      console.error('Error in group-participants.update:', error);
-    }
-  });
-  
-  // call handler - Aap ka anticall logic
-  conn.ev.on('call', async (callData) => {
-    try {
-      // Aap ka anticall logic yahan aayega
-      // ...
-    } catch (error) {
-      console.error(chalk.red('[ANTICALL ERROR]'), error);
-    }
-  });
-  
-  // ========== AAP KE ORIGINAL HELPER FUNCTIONS ==========
-  // Yeh functions waisa hi rahein ge, bas ESM compatible banaye hain
-  
-  conn.sendTextWithMentions = async (jid, text, quoted, options = {}) => {
-    const mentionedJid = [...text.matchAll(/@(\d{0,16})/g)].map(
-      (v) => v[1] + "@s.whatsapp.net"
-    );
-    return conn.sendMessage(jid, {
-      text: text,
-      contextInfo: { mentionedJid: mentionedJid },
-      ...options
-    }, { quoted });
-  };
-  
-  conn.sendImageAsSticker = async (jid, path, quoted, options = {}) => {
-    let buff;
-    try {
-      buff = Buffer.isBuffer(path)
-        ? path
-        : /^data:.*?\/.*?;base64,/i.test(path)
-        ? Buffer.from(path.split`,`[1], 'base64')
-        : /^https?:\/\//.test(path)
-        ? await getBuffer(path)
-        : fs.existsSync(path)
-        ? fs.readFileSync(path)
-        : Buffer.alloc(0);
-    } catch (e) {
-      console.error('Error getting buffer:', e);
-      buff = Buffer.alloc(0);
-    }
-    
-    let buffer;
-    if (options && (options.packname || options.author)) {
-      buffer = await writeExifImg(buff, options);
-    } else {
-      buffer = await imageToWebp(buff);
-    }
-    
-    await conn.sendMessage(jid, { sticker: { url: buffer }, ...options }, { quoted });
-    return buffer;
-  };
-  
-  conn.getName = async (jid, withoutContact = false) => {
-    let id = conn.decodeJid(jid);
-    withoutContact = conn.withoutContact || withoutContact;
-    let v;
-    
-    if (id.endsWith("@g.us")) {
-      return new Promise(async (resolve) => {
-        try {
-          v = store.contacts[id] || {};
-          if (!(v.name || v.subject)) v = await conn.groupMetadata(id) || {};
-          resolve(v.name || v.subject || id.split('@')[0]);
-        } catch (e) {
-          resolve(id.split('@')[0]);
-        }
-      });
-    } else {
-      // V7 UPDATE: LID handle karein
-      if (id.endsWith('@lid')) {
-        try {
-          // LID se phone number nikalain
-          if (global.lidMapping && global.lidMapping.has(id)) {
-            const phoneNumber = global.lidMapping.get(id);
-            id = phoneNumber || id;
-          }
-        } catch (e) {
-          // Ignore error
-        }
-      }
-      
-      v = id === "0@s.whatsapp.net"
-        ? { id, name: "WhatsApp" }
-        : id === conn.decodeJid(conn.user.id)
-        ? conn.user
-        : store.contacts[id] || {};
-      
-      return (
-        (withoutContact ? "" : v.name) ||
-        v.subject ||
-        v.verifiedName ||
-        id.split('@')[0]
-      );
-    }
-  };
-  
-  // ========== CONNECTION UPDATE HANDLER ==========
-  conn.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
-    
-    if (qr) {
-      console.log(chalk.yellow('QR Code generated, scan with WhatsApp'));
-    }
-    
-    if (connection === 'close') {
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log(chalk.red(`Connection closed. Reconnecting: ${shouldReconnect}`));
-      
-      if (shouldReconnect) {
-        await sleep(5000);
-        clientstart();
-      }
-    } else if (connection === 'open') {
-      console.log(chalk.green('✅ Connected to WhatsApp!'));
-      
-      // Pairing code logic
-      if (!creds && !conn.user?.id && usePairingCode) {
-        const phoneNumber = await question(chalk.greenBright(`Thanks for choosing Jexploit-bot. Please provide your number start with 256xxx:\n`));
-        const code = await conn.requestPairingCode(phoneNumber.trim());
-        console.log(chalk.cyan(`Code: ${code}`));
-      }
-    }
-  });
-  
-  // Credentials update
-  conn.ev.on('creds.update', saveCreds);
-  
-  // Maintenance schedules
-  setInterval(cleanupTmpFiles, 30 * 60 * 1000);
-  setInterval(() => {
-    monitorResources();
-  }, 10 * 60 * 1000);
-  
-  console.log(chalk.green('✨ Jexploit Bot v7.0.0-rc.9 is running!'));
-  return conn;
-}
-
-// Memory monitoring function
 function monitorResources() {
   if (isLowMemory) {
     const used = process.memoryUsage();
@@ -485,5 +183,495 @@ function monitorResources() {
   }
 }
 
+// ========== BOT START FUNCTION - UPDATED FOR v7 ==========
+async function clientstart() {
+  // Load session if available
+  const creds = await loadSession();
+  
+  // Use multi-file auth state
+  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+  
+  // Fetch latest version
+  let waVersion;
+  try {
+    const { version } = await fetchLatestBaileysVersion();
+    waVersion = version;
+    console.log("[JEXPLOIT] Connecting to WhatsApp ⏳️...");
+  } catch (error) {
+    console.log(chalk.yellow(`[⚠️] Using stable fallback version`));
+    waVersion = [2, 3000, 1017546695];
+  }
+
+  // ========== CREATE SOCKET WITH v7 CONFIG ==========
+  const conn = makeWASocket({
+    // Connection settings
+    printQRInTerminal: !usePairingCode,
+    syncFullHistory: false,
+    markOnlineOnConnect: true,
+    connectTimeoutMs: 60000, // Reduced for faster connection
+    defaultQueryTimeoutMs: 30000,
+    keepAliveIntervalMs: 25000,
+    maxRetries: 5,
+    
+    // Performance optimizations
+    generateHighQualityLinkPreview: false,
+    linkPreviewImageThumbnailWidth: 64,
+    
+    // Version
+    version: waVersion,
+    
+    // Browser - v7 compatible format
+    browser: Browsers.ubuntu('Chrome'),
+    
+    // Minimal logging
+    logger: pino({ level: 'silent' }),
+    
+    // Auth state
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
+    },
+    
+    // v7 specific options
+    fireInitQueries: false,
+    emitOwnEvents: true,
+    defaultCongestionControl: 1,
+    
+    // Performance options
+    transactionOpts: {
+      maxCommitRetries: 2,
+      delayBeforeRetry: 1000
+    }
+  });
+
+  // ========== DECODE JID FUNCTION - UPDATED FOR LID SUPPORT ==========
+  conn.decodeJid = (jid) => {
+    if (!jid) return jid;
+    
+    // Agar pehle se hi JID format mein hai
+    if (jid.includes('@')) {
+      return jid;
+    }
+    
+    // Agar sirf number hai
+    if (/^\d+$/.test(jid)) {
+      return jid + '@s.whatsapp.net';
+    }
+    
+    return jid;
+  };
+
+  // Store for contacts and messages
+  const { makeInMemoryStore } = require("./start/lib/store/");
+  const store = makeInMemoryStore({
+    logger: pino().child({ level: 'silent', stream: 'store' })
+  });
+  store.bind(conn.ev);
+
+  // ========== MESSAGE HANDLER ==========
+  conn.ev.on('messages.upsert', async (chatUpdate) => {
+    try {
+      let mek = chatUpdate.messages[0];
+      if (!mek.message) return;
+      
+      // Handle ephemeral messages
+      mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage') 
+        ? mek.message.ephemeralMessage.message 
+        : mek.message;
+
+      // Status broadcast handling
+      if (mek.key && mek.key.remoteJid === 'status@broadcast') {
+        if (mek.message?.reactionMessage || mek.message?.protocolMessage) {
+          return;
+        }
+        
+        // Auto-view status
+        try {
+          await conn.readMessages([mek.key]);
+        } catch (viewError) {
+          console.error('Error viewing status:', viewError);
+        }
+        
+        // Auto-react to status
+        try {
+          const reactions = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+          const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+          
+          await conn.sendMessage(mek.key.remoteJid, {
+            react: {
+              text: randomReaction,
+              key: mek.key
+            }
+          });
+        } catch (reactError) {
+          console.error('Error reacting to status:', reactError);
+        }
+        
+        return;
+      }
+
+      if (!conn.public && !mek.key.fromMe && chatUpdate.type === 'notify') return;
+      
+      let m = smsg(conn, mek, store);
+      
+      // Load your command handler
+      if (!isLowMemory) {
+        require("./start/kevin")(conn, m, chatUpdate, mek, store);
+      }
+      
+    } catch (err) {
+      console.log(chalk.yellow.bold("[ ERROR ] messages.upsert :\n") + chalk.redBright(util.format(err)));
+    }
+  });
+
+  // ========== CONTACTS UPDATE ==========
+  conn.ev.on('contacts.update', update => {
+    for (let contact of update) {
+      let id = conn.decodeJid(contact.id);
+      if (store && store.contacts) {
+        store.contacts[id] = { id, name: contact.notify };
+      }
+    }
+  });
+
+  // ========== GROUP PARTICIPANTS UPDATE ==========
+  conn.ev.on('group-participants.update', async (anu) => {
+    try {
+      const botNumber = await conn.decodeJid(conn.user?.id);
+      
+      // Welcome feature
+      const welcomeEnabled = true; // Aap ke settings se lein
+      const admineventEnabled = true; // Aap ke settings se lein
+      
+      if (welcomeEnabled) {
+        try {
+          const groupMetadata = await conn.groupMetadata(anu.id);
+          const participants = anu.participants;
+          
+          for (const participant of participants) {
+            let ppUrl;
+            try {
+              ppUrl = await conn.profilePictureUrl(participant, 'image');
+            } catch {
+              ppUrl = 'https://i.ibb.co/RBx5SQC/avatar-group-large-v2.png?q=60';
+            }
+            
+            const userId = conn.decodeJid(participant);
+            const name = await conn.getName(participant) || userId.split('@')[0];
+            
+            if (anu.action === 'add') {
+              const memberCount = groupMetadata.participants.length;
+              await conn.sendMessage(anu.id, {
+                image: { url: ppUrl },
+                caption: `
+*${config.botname || 'Jexploit'} welcome* @${userId.split('@')[0]}  
+
+*Group Name: ${groupMetadata.subject}*
+
+*You're our ${memberCount}th member!*
+
+*Join time: ${moment.tz(timezones).format('HH:mm:ss')}, ${moment.tz(timezones).format('DD/MM/YYYY')}*
+
+*Enjoy your stay!*
+
+> ${config.wm || 'Powered by Kelvin Tech'}`,
+                mentions: [participant]
+              });
+              console.log(`✅ Welcome message sent for ${name}`);
+              
+            } else if (anu.action === 'remove') {
+              const memberCount = groupMetadata.participants.length;
+              await conn.sendMessage(anu.id, {
+                image: { url: ppUrl },
+                caption: `
+*👋 Goodbye* 😪 @${userId.split('@')[0]}
+
+*Left at: ${moment.tz(timezones).format('HH:mm:ss')}, ${moment.tz(timezones).format('DD/MM/YYYY')}*
+
+*We're now ${memberCount} members*.
+
+> ${config.wm || 'Powered by Kelvin Tech'}`,
+                mentions: [participant]
+              });
+              console.log(`✅ Goodbye message sent for ${name}`);
+            }
+          }
+        } catch (err) {
+          console.error('Error in welcome feature:', err);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error in group-participants.update:', error);
+    }
+  });
+
+  // ========== CALL HANDLER ==========
+  conn.ev.on('call', async (callData) => {
+    try {
+      const anticallSetting = 'decline'; // Aap ke settings se lein
+      
+      if (!anticallSetting || anticallSetting === 'off') {
+        console.log(chalk.gray('[ANTICALL] Disabled'));
+        return;
+      }
+      
+      for (let call of callData) {
+        const from = call.from;
+        const callId = call.id;
+        
+        console.log(chalk.yellow(`[ANTICALL] Call from: ${from}`));
+        
+        // Reject call
+        try {
+          if (typeof conn.rejectCall === 'function') {
+            await conn.rejectCall(callId, from);
+            console.log(chalk.green(`[ANTICALL] Call rejected from: ${from}`));
+            
+            // Send message to caller
+            await conn.sendMessage(from, {
+              text: `🚫 *Call Declined*\n\n` +
+                    `I'm ${config.botname || 'Jexploit Bot'}, a WhatsApp bot.\n` +
+                    `I cannot receive calls.\n\n` +
+                    `> ${config.wm || 'Powered by Kelvin Tech'}`
+            });
+          }
+        } catch (rejectError) {
+          console.error(chalk.red('[ANTICALL] Failed to reject call:'), rejectError);
+        }
+      }
+    } catch (error) {
+      console.error(chalk.red('[ANTICALL ERROR]'), error);
+    }
+  });
+
+  // ========== CONNECTION UPDATE HANDLER ==========
+  conn.ev.on('connection.update', async (update) => {
+    const { connection, lastDisconnect, qr } = update;
+    
+    if (qr) {
+      console.log(chalk.yellow('📱 Scan QR code with WhatsApp'));
+    }
+    
+    if (connection === 'close') {
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log(chalk.red(`Connection closed. Reconnecting: ${shouldReconnect}`));
+      
+      if (shouldReconnect) {
+        await sleep(5000);
+        clientstart();
+      }
+    } else if (connection === 'open') {
+      console.log(chalk.green('✅ Connected to WhatsApp!'));
+      
+      // Pairing code logic
+      if (!creds && !conn.user?.id && usePairingCode) {
+        const phoneNumber = await question(chalk.greenBright(`Thanks for choosing Jexploit-bot. Please provide your number start with 256xxx:\n`));
+        const code = await conn.requestPairingCode(phoneNumber.trim());
+        console.log(chalk.cyan(`Code: ${code}`));
+        console.log(chalk.cyan(`Jexploit: Please use this code to connect your WhatsApp account.`));
+      }
+    }
+  });
+
+  // ========== CREDENTIALS UPDATE ==========
+  conn.ev.on('creds.update', saveCreds);
+
+  // ========== HELPER FUNCTIONS ==========
+  
+  // Send image as sticker
+  conn.sendImageAsSticker = async (jid, path, quoted, options = {}) => {
+    let buff;
+    try {
+      buff = Buffer.isBuffer(path)
+        ? path
+        : /^data:.*?\/.*?;base64,/i.test(path)
+        ? Buffer.from(path.split`,`[1], 'base64')
+        : /^https?:\/\//.test(path)
+        ? await getBuffer(path)
+        : fs.existsSync(path)
+        ? fs.readFileSync(path)
+        : Buffer.alloc(0);
+    } catch (e) {
+      console.error('Error getting buffer:', e);
+      buff = Buffer.alloc(0);
+    }
+
+    let buffer;
+    if (options && (options.packname || options.author)) {
+      buffer = await writeExifImg(buff, options);
+    } else {
+      buffer = await imageToWebp(buff);
+    }
+
+    await conn.sendMessage(jid, { sticker: { url: buffer }, ...options }, { quoted });
+    return buffer;
+  };
+
+  // Get name function
+  conn.getName = async (jid, withoutContact = false) => {
+    let id = conn.decodeJid(jid);
+    withoutContact = conn.withoutContact || withoutContact;
+    let v;
+    
+    if (id.endsWith("@g.us")) {
+      return new Promise(async (resolve) => {
+        try {
+          v = store.contacts[id] || {};
+          if (!(v.name || v.subject)) v = await conn.groupMetadata(id) || {};
+          resolve(v.name || v.subject || PhoneNumber("+" + id.replace("@s.whatsapp.net", "")).getNumber("international"));
+        } catch (e) {
+          resolve(PhoneNumber("+" + id.replace("@s.whatsapp.net", "")).getNumber("international"));
+        }
+      });
+    } else {
+      v = id === "0@s.whatsapp.net"
+        ? { id, name: "WhatsApp" }
+        : id === conn.decodeJid(conn.user.id)
+        ? conn.user
+        : store.contacts[id] || {};
+      
+      return (
+        (withoutContact ? "" : v.name) ||
+        v.subject ||
+        v.verifiedName ||
+        PhoneNumber("+" + id.replace("@s.whatsapp.net", "")).getNumber("international")
+      );
+    }
+  };
+
+  // Send text with mentions
+  conn.sendTextWithMentions = async (jid, text, quoted, options = {}) => {
+    const mentionedJid = [...text.matchAll(/@(\d{0,16})/g)].map(
+      (v) => v[1] + "@s.whatsapp.net"
+    );
+    return conn.sendMessage(jid, {
+      text: text,
+      contextInfo: { mentionedJid: mentionedJid },
+      ...options
+    }, { quoted });
+  };
+
+  // Download media message
+  conn.downloadAndSaveMediaMessage = async (message, filename, attachExtension = true) => {
+    let quoted = message.msg ? message.msg : message;
+    let mime = (message.msg || message).mimetype || "";
+    let messageType = message.mtype ? message.mtype.replace(/Message/gi, "") : mime.split("/")[0];
+
+    const stream = await downloadContentFromMessage(quoted, messageType);
+    let buffer = Buffer.from([]);
+    for await (const chunk of stream) {
+      buffer = Buffer.concat([buffer, chunk]);
+    }
+
+    let type = await FileType.fromBuffer(buffer);
+    let trueFileName = attachExtension ? (filename + "." + (type ? type.ext : 'bin')) : filename;
+    let savePath = path.join(__dirname, 'tmp', trueFileName);
+    
+    if (!fs.existsSync(path.join(__dirname, 'tmp'))) {
+      fs.mkdirSync(path.join(__dirname, 'tmp'), { recursive: true });
+    }
+    
+    await fs.writeFileSync(savePath, buffer);
+    return savePath;
+  };
+
+  // Get file
+  conn.getFile = async (PATH, returnAsFilename) => {
+    let res, filename;
+    const data = Buffer.isBuffer(PATH) 
+      ? PATH 
+      : /^data:.*?\/.*?;base64,/i.test(PATH) 
+      ? Buffer.from(PATH.split`, `[1], 'base64') 
+      : /^https?:\/\//.test(PATH) 
+      ? (res = await axios.get(PATH, { responseType: 'arraybuffer' }), Buffer.from(res.data))
+      : fs.existsSync(PATH) 
+      ? (filename = PATH, fs.readFileSync(PATH)) 
+      : typeof PATH === 'string' 
+      ? PATH 
+      : Buffer.alloc(0);
+
+    if (!Buffer.isBuffer(data)) throw new TypeError('Result is not a buffer');
+    
+    const type = await FileType.fromBuffer(data) || { mime: 'application/octet-stream', ext: '.bin' };
+    
+    if (returnAsFilename && !filename) {
+      filename = path.join(__dirname, './tmp/' + new Date() * 1 + '.' + type.ext);
+      await fs.promises.writeFile(filename, data);
+    }
+    
+    return { res, filename, ...type, data };
+  };
+
+  // Serialize message
+  conn.serializeM = (m) => smsg(conn, m, store);
+
+  // Create temp folder
+  function createTmpFolder() {
+    const folderName = "tmp";
+    const folderPath = path.join(__dirname, folderName);
+
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath);
+    }
+  }
+  
+  createTmpFolder();
+
+  // Junk cleaner
+  setInterval(() => {
+    let directoryPath = path.join(__dirname, 'tmp');
+    if (fs.existsSync(directoryPath)) {
+      fs.readdir(directoryPath, async function (err, files) {
+        var filteredArray = await files.filter(item =>
+          item.endsWith("gif") ||
+          item.endsWith("png") || 
+          item.endsWith("mp3") ||
+          item.endsWith("mp4") || 
+          item.endsWith("opus") || 
+          item.endsWith("jpg") ||
+          item.endsWith("webp") ||
+          item.endsWith("webm") ||
+          item.endsWith("zip") 
+        )
+        if(filteredArray.length > 0){
+          let teks =`Detected ${filteredArray.length} junk files,\nJunk files have been deleted🚮`
+          conn.sendMessage(conn.user.id, {text : teks })
+          setInterval(() => {
+            if(filteredArray.length == 0) return console.log("Junk files cleared")
+            filteredArray.forEach(function (file) {
+              let sampah = fs.existsSync(path.join(directoryPath, file))
+              if(sampah) fs.unlinkSync(path.join(directoryPath, file))
+            })
+          }, 15_000)
+        }
+      });
+    }
+  }, 30_000)
+
+  // Set prefix
+  conn.prefa = settings.prefa || '!';
+  conn.public = config.autoviewstatus || true;
+
+  // Maintenance schedules
+  setInterval(cleanupTmpFiles, 30 * 60 * 1000);
+  setInterval(monitorResources, 10 * 60 * 1000);
+
+  console.log(chalk.green('✨ Jexploit Bot v7 is running successfully!'));
+  console.log(chalk.cyan(`📊 Memory mode: ${isLowMemory ? 'Optimized' : 'Normal'}`));
+  console.log(chalk.cyan(`🌐 Timezone: ${timezones}`));
+  
+  return conn;
+}
+
 // Start the bot
 clientstart().catch(console.error);
+
+// Auto restart on file changes
+let file = require.resolve(__filename);
+fs.watchFile(file, () => {
+  fs.unwatchFile(file);
+  console.log(chalk.redBright(`Update ${__filename}`));
+  delete require.cache[file];
+  require(file);
+});
